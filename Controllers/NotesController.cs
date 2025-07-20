@@ -32,7 +32,7 @@ namespace ToDoList.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        // GET: api/v1/notes/id
+        // GET: api/v1/notes/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetNoteById(Guid id)
         {
@@ -71,19 +71,41 @@ namespace ToDoList.Controllers
             return NoContent();
         }
 
+        //[HttpPut("{id}")]
+        //public async Task<IActionResult> UpdateNote(Guid id, NoteUpdateDto dto)
+        //{
+        //    var note = await _context.Notes.FindAsync(id);
+        //    if (note == null) return NotFound();
+
+        //    // Явное обновление полей
+        //    note.HeadLine = dto.HeadLine;
+        //    note.Title = dto.Title;
+        //    note.CheckPoint = dto.CheckPoint;
+
+        //    await _context.SaveChangesAsync();
+        //    return NoContent();
+        //}
+
+        /// <summary>
+        /// Выбираем размер файла (Пользователь выбирает размер файла, для теста)
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="FileWeight"></param>
+        /// <returns></returns>
+        // PUT: api/v1/notes/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateNote(Guid id, NoteUpdateDto dto)
+        public async Task<IActionResult> PutWeight(Guid id, float FileWeight)
         {
             var note = await _context.Notes.FindAsync(id);
-            if (note == null) return NotFound();
 
-            // Явное обновление полей
-            note.HeadLine = dto.HeadLine;
-            note.Title = dto.Title;
-            note.CheckPoint = dto.CheckPoint;
+            if (note == null) return NotFound();
+            if (FileWeight <= 0) return BadRequest();
+
+            note.FileWeight = FileWeight;
 
             await _context.SaveChangesAsync();
             return NoContent();
+
         }
     }
 }
