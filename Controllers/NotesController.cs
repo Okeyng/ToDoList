@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ToDoList.Models;
+using ToDoList.Services.Interface;
 
 namespace ToDoList.Controllers
 {
@@ -8,14 +9,14 @@ namespace ToDoList.Controllers
     [Route("/api/v1/[controller]")]
     public class NotesController : ControllerBase
     {
-        private readonly LearningDbContext _context;
+        private readonly INoteService _noteService;
 
-        public NotesController(LearningDbContext context)
+        public NotesController(INoteService noteService)
         {
-            _context = context;
+            _noteService = noteService;
         }
         /// <summary>
-        /// Получает все заметки
+        /// Возвращает все заметки
         /// </summary>
         /// <returns></returns>
         
@@ -23,16 +24,7 @@ namespace ToDoList.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllNotes()
         {
-            var notes = await _context.Notes
-                .Select(n => new NoteDto
-                {
-                    Id = n.Id,
-                    HeadLine = n.HeadLine,
-                    Title = n.Title,
-                    FileWeight = n.FileWeight,
-                    CheckPoint = n.CheckPoint,
-                })
-                .ToListAsync();
+            var notes = await _noteService.GetAllNotesAsync();
 
             return Ok(notes);
         }
@@ -46,18 +38,10 @@ namespace ToDoList.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetNoteById(Guid id)
         {
-            var note = await _context.Notes.FindAsync(id);
+            var note = await _noteService.GetNoteByIdAsync(id);
             if (note == null) return NotFound();
 
-            var dto = new NoteDto
-            {
-                Id = note.Id,
-                HeadLine = note.HeadLine,
-                Title = note.Title,
-                FileWeight = note.FileWeight,
-                CheckPoint = note.CheckPoint,
-            };                
-            return Ok(dto);
+            return Ok(note);
         }
 
         /// <summary>
@@ -67,31 +51,13 @@ namespace ToDoList.Controllers
         /// <returns></returns>
         // POST: api/v1/notes
         [HttpPost]
-        public async Task<IActionResult> PostNote([FromBody] NoteCreateDto noteDto)
+        public async Task<IActionResult> PostNote(NoteCreateDto note)
         {   
             if(!ModelState.IsValid) return BadRequest(ModelState);
 
-            var newNote = new NoteEntity
-            {
-                Id = Guid.NewGuid(),
-                HeadLine = noteDto.HeadLine,
-                Title = noteDto.Title,
-                FileWeight = noteDto.FileWeight,
-                CheckPoint = noteDto.CheckPoint,
-            };
-            await _context.Notes.AddAsync(newNote);
-            await _context.SaveChangesAsync();
+            var result = await _noteService.PostNoteAsync(note);
 
-            var result = new NoteDto
-            {
-                Id = newNote.Id,
-                HeadLine = newNote.HeadLine,
-                Title = newNote.Title,
-                FileWeight = newNote.FileWeight,
-                CheckPoint = newNote.CheckPoint,
-            };
-
-            return CreatedAtAction(nameof(GetNoteById), new { id = newNote.Id }, result);
+            return CreatedAtAction(nameof(GetNoteById), new { id = result.Id }, result);
         }
 
         
@@ -99,20 +65,14 @@ namespace ToDoList.Controllers
         [HttpDelete]
         public async Task<IActionResult> DeleteNote(Guid id)
         {
-            var note = await _context.Notes.FindAsync(id);
-            if (note == null)
-            {
-                return NotFound();
-            }
-
-            _context.Notes.Remove(note);
-            await _context.SaveChangesAsync();
+            var deleted = await _noteService.DeleteNoteAsync(id);
+            if (!deleted) return NotFound();
 
             return NoContent();
         }
 
         //[HttpPut("{id}")]
-        //public async Task<IActionResult> UpdateNote(Guid id, NoteUpdateDto dto)
+        //public async Task<IActionResult> UpdateNote(Guid id, NoteUpdateDto dto) // Не в контроллер
         //{
         //    var note = await _context.Notes.FindAsync(id);
         //    if (note == null) return NotFound();
@@ -134,16 +94,13 @@ namespace ToDoList.Controllers
         /// <returns></returns>
         // PUT: api/v1/notes/{id}
         [HttpPut("{id}/set-weight")]
-        public async Task<IActionResult> PutWeight(Guid id, [FromBody] NoteWeightDto WeightDto)
+        public async Task<IActionResult> SetWeight(Guid id,[FromBody] float Weight)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var note = await _context.Notes.FindAsync(id);
-            if (note == null) return NotFound();
+            var set = await _noteService.SetWeightWeightAsync(id, Weight);
+            if (!set) return NotFound();
 
-            note.FileWeight = WeightDto.FileWeight;
-
-            await _context.SaveChangesAsync();
             return NoContent();
         }
 
@@ -154,28 +111,14 @@ namespace ToDoList.Controllers
         /// <param name="FileWeight"></param>
         /// <returns></returns>
         [HttpPut("{id}/add-weight")]
-        public async Task<IActionResult> PutAddWeight(Guid id, [FromBody] NoteWeightDto WeightDto)
+        public async Task<IActionResult> PutAddWeight(Guid id,[FromBody] float Weight)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var note = await _context.Notes.FindAsync(id);
-            if (note == null) return NotFound();
+            var Add = await _noteService.PutAddWeightAsync(id, Weight);
+            if (!Add) return NotFound();
 
-
-            var newWeight = note.FileWeight += WeightDto.FileWeight;
-            if (newWeight > 100)
-            {
-                return BadRequest(new
-                {
-                    error = "Вес файла должен быть от 1 до 100",
-                    result = newWeight // Результат сложения
-                });
-            }
-            note.FileWeight = newWeight;
-
-            await _context.SaveChangesAsync();
             return NoContent();
-
         }
 
         /// <summary>
@@ -185,26 +128,13 @@ namespace ToDoList.Controllers
         /// <param name="FileWeight"></param>
         /// <returns></returns>
         [HttpPut("{id}/take-weight")]
-        public async Task<IActionResult> PutTakeWeight(Guid id, [FromBody] NoteWeightDto WeightDto)
+        public async Task<IActionResult> PutTakeWeight(Guid id,[FromBody] float Weight)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var note = await _context.Notes.FindAsync(id);
-            if (note == null) return NotFound();
+            var note = await _noteService.PutTakeWeightAsync(id, Weight);
+            if (!note) return NotFound();
 
-
-            var newWeight = note.FileWeight -= WeightDto.FileWeight;
-            if (newWeight < 0)
-            {
-                return BadRequest(new
-                {
-                    error = "Вес файла должен быть от 1 до 100",
-                    result = newWeight // Результат сложения
-                });
-            }
-
-            note.FileWeight = newWeight;
-            await _context.SaveChangesAsync();
             return NoContent();
         }
     }
