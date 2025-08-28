@@ -1,11 +1,8 @@
-using ToDoList;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using ToDoList.Services.Interface;
+using ToDoList;
 using ToDoList.Controllers;
+using ToDoList.Migrations;
+using ToDoList.Services.Interface;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -23,7 +20,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<LearningDbContext>(
     options =>
     {
-        options.UseNpgsql(configuration.GetConnectionString(nameof(LearningDbContext)));
+        options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"));
     });
 
 var app = builder.Build();
@@ -33,6 +30,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.ApplyMigrations();
 }
 
 app.UseHttpsRedirection();

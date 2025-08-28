@@ -1,0 +1,31 @@
+services:
+
+  postgres:
+    image: postgres:latest
+    container_name: todolist_postgres
+    environment:
+      POSTGRES_USER: todolist
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: Db_ToDoList
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  todolist:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: todolist_app:latest
+    container_name: todolist_app
+    environment:
+      ConnectionStrings__DefaultConnection: "Username=todolist;Password=root;Host=postgres;Port=5432;Database=Db_ToDoList;"
+      DOTNET_ENVIRONMENT: Development
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
