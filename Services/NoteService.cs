@@ -161,7 +161,7 @@ namespace ToDoList.Controllers
 
                 await _context.SaveChangesAsync();
                 return true;
-                throw new ValidationException("Вес файла не может быть меньше 0");
+                throw new ValidationException("Вес файла не может быть меньше 0"); // для теста 
             }
 
             note.FileWeight = newWeight;
